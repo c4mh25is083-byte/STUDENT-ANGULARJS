@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en" ng-app="studentApp">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Student Directory | Campus</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@500;600;700;800&display=swap" rel="stylesheet">
+
+    <!-- CSS Connection -->
+    <link rel="stylesheet" href="css/style.css">
+
+    <!-- AngularJS Library -->
+    <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.8.2/angular.min.js"></script>
+
+    <!-- Supabase Library -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+</head>
+
+<body ng-controller="StudentController">
+    <div class="app-shell">
+        <aside class="sidebar">
+            <a class="brand" href="#top" aria-label="Campus home">
+                <span class="brand-mark">C</span>
+                <span>campus<span class="brand-period">.</span></span>
+            </a>
+
+            <div class="sidebar-label">WORKSPACE</div>
+            <a class="side-link is-current" href="#students">
+                <span class="nav-dot"></span> Students
+                <span class="nav-count">{{students.length}}</span>
+            </a>
+            <a class="side-link" href="#new-student">
+                <span class="nav-dot nav-dot-muted"></span> Add a student
+            </a>
+
+            <div class="sidebar-note">
+                <span class="note-mark">S</span>
+                <p>Every student, in one place.</p>
+            </div>
+            <div class="sidebar-footer">STUDENT SERVICES <span>2026</span></div>
+        </aside>
+
+        <main class="main-content" id="top">
+            <header class="topbar">
+                <span>Workspace <span class="crumb-slash">/</span> Students</span>
+                <span class="account-chip"><span class="account-avatar">A</span> Administrator</span>
+            </header>
+
+            <div class="page-content">
+                <section class="page-heading" id="students">
+                    <div>
+                        <p class="eyebrow">STUDENT SERVICES <span class="eyebrow-line"></span> DIRECTORY</p>
+                        <h1>Student directory<span class="heading-period">.</span></h1>
+                        <p class="subtitle">A clear view of your campus community.</p>
+                    </div>
+                    <a class="primary-button heading-action" href="#new-student">+ Add student</a>
+                </section>
+
+                <div class="message error" ng-if="errorMessage" role="alert">{{errorMessage}}</div>
+                <div class="message success" ng-if="successMessage" role="status">{{successMessage}}</div>
+
+                <section class="stats-row" aria-label="Student summary">
+                    <div class="stat-block">
+                        <span class="stat-label">TOTAL STUDENTS</span>
+                        <strong>{{students.length}}</strong>
+                        <span class="stat-caption">In your directory</span>
+                    </div>
+                    <div class="stat-block">
+                        <span class="stat-label">ACTIVE</span>
+                        <strong>{{(students | filter:{active:true}).length}}</strong>
+                        <span class="stat-caption"><span class="status-pip"></span> Currently enrolled</span>
+                    </div>
+                    <div class="stat-block stat-accent">
+                        <span class="stat-label">INACTIVE</span>
+                        <strong>{{(students | filter:{active:false}).length}}</strong>
+                        <span class="stat-caption">Not currently enrolled</span>
+                    </div>
+                </section>
+
+                <section class="directory-section">
+                    <div class="section-heading">
+                        <div>
+                            <p class="eyebrow">THE ROSTER</p>
+                            <h2>All students <span class="table-count">{{(students | filter:searchText).length}}</span></h2>
+                        </div>
+                        <div class="list-tools">
+                            <label class="search-wrap">
+                                <span class="search-icon" aria-hidden="true"></span>
+                                <input type="search" ng-model="searchText" placeholder="Search students" aria-label="Search students">
+                            </label>
+                            <div class="sort-group" aria-label="Sort students">
+                                <button type="button" class="sort-button" ng-click="sortBy('name')">Name <span class="sort-arrows">↕</span></button>
+                                <button type="button" class="sort-button" ng-click="sortBy('department')">Department <span class="sort-arrows">↕</span></button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <p class="loading-state" ng-if="loading">Loading student details...</p>
+                    <div class="table-scroll">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th class="id-column">ID</th>
+                                    <th>STUDENT</th>
+                                    <th>DEPARTMENT</th>
+                                    <th>USN</th>
+                                    <th>CONTACT</th>
+                                    <th>STATUS</th>
+                                    <th class="action-column">ACTIONS</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr ng-repeat="s in students | filter:searchText | orderBy:sortColumn:reverseSort">
+                                    <td class="id-cell">{{s.id}}</td>
+                                    <td class="student-name">{{s.name}}</td>
+                                    <td>{{s.department}}</td>
+                                    <td class="usn-cell">{{s.usn}}</td>
+                                    <td>{{s.contact_details}}</td>
+                                    <td><span class="status-pill" ng-class="{'active': s.active, 'inactive': !s.active}">{{s.active ? 'Active' : 'Inactive'}}</span></td>
+                                    <td class="row-actions">
+                                        <button type="button" class="text-action" ng-click="toggleStatus(s)">Change status</button>
+                                        <button type="button" class="delete-btn" ng-click="deleteStudent(s)" aria-label="Delete {{s.name}}" title="Delete student">Delete</button>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="empty-state" ng-if="!loading && (students | filter:searchText).length === 0">
+                        <span class="empty-mark">+</span>
+                        <strong>No students found</strong>
+                        <span>Try another search or add a student to the directory.</span>
+                    </div>
+                    <div class="table-footer">
+                        <span ng-show="students.length > 0">Showing {{(students | filter:searchText).length}} of {{students.length}} students</span>
+                        <span ng-if="loading" class="loading-caption">Syncing directory...</span>
+                    </div>
+                </section>
+
+                <section class="add-section" id="new-student">
+                    <div class="add-intro">
+                        <p class="eyebrow">GROW YOUR COMMUNITY</p>
+                        <h2>Add a student<span class="heading-period">.</span></h2>
+                        <p>Enter the details below to create a new student record.</p>
+                    </div>
+                    <form class="student-form" ng-submit="addStudent()">
+                        <label>Full name<input type="text" ng-model="newStudent.name" placeholder="e.g. Maya Chen" required></label>
+                        <label>Department<input type="text" ng-model="newStudent.department" placeholder="e.g. Computer Science" required></label>
+                        <label>University ID<input type="text" ng-model="newStudent.usn" placeholder="e.g. CS2026001" required></label>
+                        <label>Contact details<input type="text" ng-model="newStudent.contact_details" placeholder="Email or phone" required></label>
+                        <button class="primary-button form-submit" type="submit" ng-disabled="loading">Add to directory <span aria-hidden="true">&rarr;</span></button>
+                    </form>
+                </section>
+
+                <details class="project-details">
+                    <summary>About this project</summary>
+                    <div class="info">
+                        <p>This project demonstrates AngularJS concepts:</p>
+                        <ul>
+                            <li>Controllers and $scope</li>
+                            <li>ng-model and ng-repeat</li>
+                            <li>ng-click, ng-show, ng-if and ng-class</li>
+                            <li>Filters and orderBy</li>
+                        </ul>
+                    </div>
+                </details>
+                <footer class="page-footer"><span>CAMPUS STUDENT DIRECTORY</span><span>MADE FOR BETTER CAMPUS RECORDS</span></footer>
+            </div>
+        </main>
+    </div>
+
+    <!-- JavaScript Connection -->
+    <script src="js/app.js"></script>
+
+</body>
+</html>
