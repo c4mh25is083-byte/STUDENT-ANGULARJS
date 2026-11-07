@@ -1,9 +1,8 @@
 var app = angular.module("studentApp", []);
 
 // Supabase Connection
-var SUPABASE_URL = "https://ghcumqiswbocdxcvwuqh.supabase.co0";
+var SUPABASE_URL = "https://ghcumqiswbocdxcvwuqh.supabase.co/v";
 var SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdoY3VtcWlzd2JvY2R4Y3Z3dXFoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTM3NTU3NDAsImV4cCI6MjEwOTMzMTc0MH0.T5q9rWx0AdYQORghbG7vpRZe02OXoY4FdDYehxifhUg";
-
 // Create Supabase Client
 var supabaseClient = window.supabase.createClient(
     SUPABASE_URL,
