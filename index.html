@@ -5,177 +5,346 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <title>Student Directory | Campus</title>
+    <title>Student Management | Administration</title>
 
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@500;600;700;800&display=swap" rel="stylesheet">
-
-    <!-- CSS Connection -->
     <link rel="stylesheet" href="css/style.css">
 
-    <!-- AngularJS Library -->
     <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.8.2/angular.min.js"></script>
-
-    <!-- Supabase Library -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
+    <script src="js/script.js" defer></script>
 </head>
 
-<body ng-controller="StudentController">
-    <div class="app-shell">
-        <aside class="sidebar">
-            <a class="brand" href="#top" aria-label="Campus home">
-                <span class="brand-mark">C</span>
-                <span>campus<span class="brand-period">.</span></span>
-            </a>
+<body ng-controller="StudentController" ng-cloak>
 
-            <div class="sidebar-label">WORKSPACE</div>
-            <a class="side-link is-current" href="#students">
-                <span class="nav-dot"></span> Students
-                <span class="nav-count">{{students.length}}</span>
-            </a>
-            <a class="side-link" href="#new-student">
-                <span class="nav-dot nav-dot-muted"></span> Add a student
-            </a>
+    <!-- PUBLIC REGISTRATION -->
+    <section class="public-page" ng-if="!loggedIn">
 
-            <div class="sidebar-note">
-                <span class="note-mark">S</span>
-                <p>Every student, in one place.</p>
+        <div class="public-card">
+            <h1>Student Registration</h1>
+            <p>Student Management Portal</p>
+
+            <div ng-if="formLoading">Checking registration status...</div>
+
+            <div ng-if="!formLoading && formOpen">
+
+                <form ng-submit="registerStudent()">
+
+                    <label>Student Name</label>
+                    <input type="text" ng-model="publicForm.student_name" required>
+
+                    <label>USN</label>
+                    <input type="text" ng-model="publicForm.usn" required>
+
+                    <label>Department</label>
+                    <input type="text" ng-model="publicForm.department" required>
+
+                    <label>Year</label>
+                    <input type="number" ng-model="publicForm.year"
+                           min="1" max="5" required>
+
+                    <label>Contact Number</label>
+                    <input type="tel" ng-model="publicForm.contact" required>
+
+                    <label>Age</label>
+                    <input type="number" ng-model="publicForm.age" min="1">
+
+                    <button type="submit" ng-disabled="loading">
+                        {{loading ? 'Submitting...' : 'Submit Registration'}}
+                    </button>
+
+                </form>
+
+                <p class="success">{{publicMessage}}</p>
+                <p class="error">{{publicError}}</p>
+
             </div>
-            <div class="sidebar-footer">STUDENT SERVICES <span>2026</span></div>
-        </aside>
 
-        <main class="main-content" id="top">
-            <header class="topbar">
-                <span>Workspace <span class="crumb-slash">/</span> Students</span>
-                <span class="account-chip"><span class="account-avatar">A</span> Administrator</span>
-            </header>
+            <div class="locked-message"
+                 ng-if="!formLoading && !formOpen">
 
-            <div class="page-content">
-                <section class="page-heading" id="students">
-                    <div>
-                        <p class="eyebrow">STUDENT SERVICES <span class="eyebrow-line"></span> DIRECTORY</p>
-                        <h1>Student directory<span class="heading-period">.</span></h1>
-                        <p class="subtitle">A clear view of your campus community.</p>
-                    </div>
-                    <a class="primary-button heading-action" href="#new-student">+ Add student</a>
-                </section>
+                <h2>Registration Closed</h2>
+                <p>The administrator has currently locked the registration form.</p>
 
-                <div class="message error" ng-if="errorMessage" role="alert">{{errorMessage}}</div>
-                <div class="message success" ng-if="successMessage" role="status">{{successMessage}}</div>
+            </div>
+        </div>
 
-                <section class="stats-row" aria-label="Student summary">
-                    <div class="stat-block">
-                        <span class="stat-label">TOTAL STUDENTS</span>
-                        <strong>{{students.length}}</strong>
-                        <span class="stat-caption">In your directory</span>
-                    </div>
-                    <div class="stat-block">
-                        <span class="stat-label">ACTIVE</span>
-                        <strong>{{(students | filter:{active:true}).length}}</strong>
-                        <span class="stat-caption"><span class="status-pip"></span> Currently enrolled</span>
-                    </div>
-                    <div class="stat-block stat-accent">
-                        <span class="stat-label">INACTIVE</span>
-                        <strong>{{(students | filter:{active:false}).length}}</strong>
-                        <span class="stat-caption">Not currently enrolled</span>
-                    </div>
-                </section>
+    </section>
 
-                <section class="directory-section">
-                    <div class="section-heading">
+
+    <!-- ADMIN LOGIN -->
+    <section class="login-page" ng-if="!loggedIn">
+
+        <div class="login-card">
+
+            <h1>Administrator Login</h1>
+            <p>Authorized Administration Department Only</p>
+
+            <form ng-submit="login()">
+
+                <label>Admin Email</label>
+                <input type="email"
+                       ng-model="loginData.email"
+                       placeholder="Enter administrator email"
+                       required>
+
+                <label>Password</label>
+                <input type="password"
+                       ng-model="loginData.password"
+                       placeholder="Enter password"
+                       required>
+
+                <button type="submit" ng-disabled="loading">
+                    {{loading ? 'Please wait...' : 'Login'}}
+                </button>
+
+            </form>
+
+            <p class="error">{{loginError}}</p>
+
+        </div>
+
+    </section>
+
+
+    <!-- ADMIN DASHBOARD -->
+    <section class="dashboard" ng-if="loggedIn">
+
+        <header class="topbar">
+
+            <div>
+                <h2>Student Management System</h2>
+                <p>Administration Dashboard</p>
+            </div>
+
+            <button class="logout-btn" ng-click="logout()">
+                Logout
+            </button>
+
+        </header>
+
+
+        <main class="container">
+
+            <!-- STATISTICS -->
+            <section class="stats">
+
+                <div class="stat-card">
+                    <h3>Total Students</h3>
+                    <h1>{{students.length}}</h1>
+                </div>
+
+                <div class="stat-card">
+                    <h3>Active Students</h3>
+                    <h1>{{countStatus('Active')}}</h1>
+                </div>
+
+                <div class="stat-card">
+                    <h3>Inactive Students</h3>
+                    <h1>{{countStatus('Inactive')}}</h1>
+                </div>
+
+            </section>
+
+
+            <!-- FORM OPEN / LOCK -->
+            <section class="control-card">
+
+                <div>
+                    <h3>Registration Form Control</h3>
+
+                    <p ng-class="formOpen ? 'open-text' : 'closed-text'">
+                        {{formOpen ? 'FORM IS OPEN' : 'FORM IS LOCKED'}}
+                    </p>
+                </div>
+
+                <button ng-click="toggleForm()"
+                        ng-disabled="loading"
+                        ng-class="formOpen ? 'lock-btn' : 'open-btn'">
+
+                    {{formOpen ? 'LOCK FORM' : 'OPEN FORM'}}
+
+                </button>
+
+            </section>
+
+
+            <!-- ADD / EDIT STUDENT -->
+            <section class="form-card">
+
+                <h2>{{editing ? 'Edit Student' : 'Add New Student'}}</h2>
+
+                <form ng-submit="saveStudent()">
+
+                    <div class="form-grid">
+
                         <div>
-                            <p class="eyebrow">THE ROSTER</p>
-                            <h2>All students <span class="table-count">{{(students | filter:searchText).length}}</span></h2>
+                            <label>Student Name</label>
+                            <input type="text"
+                                   ng-model="studentForm.student_name"
+                                   required>
                         </div>
-                        <div class="list-tools">
-                            <label class="search-wrap">
-                                <span class="search-icon" aria-hidden="true"></span>
-                                <input type="search" ng-model="searchText" placeholder="Search students" aria-label="Search students">
-                            </label>
-                            <div class="sort-group" aria-label="Sort students">
-                                <button type="button" class="sort-button" ng-click="sortBy('name')">Name <span class="sort-arrows">↕</span></button>
-                                <button type="button" class="sort-button" ng-click="sortBy('department')">Department <span class="sort-arrows">↕</span></button>
-                            </div>
+
+                        <div>
+                            <label>USN</label>
+                            <input type="text"
+                                   ng-model="studentForm.usn"
+                                   required>
                         </div>
+
+                        <div>
+                            <label>Department</label>
+                            <input type="text"
+                                   ng-model="studentForm.department"
+                                   required>
+                        </div>
+
+                        <div>
+                            <label>Year</label>
+                            <input type="number"
+                                   ng-model="studentForm.year"
+                                   min="1" max="5"
+                                   required>
+                        </div>
+
+                        <div>
+                            <label>Contact Number</label>
+                            <input type="tel"
+                                   ng-model="studentForm.contact"
+                                   required>
+                        </div>
+
+                        <div>
+                            <label>Age</label>
+                            <input type="number"
+                                   ng-model="studentForm.age"
+                                   min="1">
+                        </div>
+
+                        <div>
+                            <label>Status</label>
+                            <select ng-model="studentForm.status">
+                                <option value="Active">Active</option>
+                                <option value="Inactive">Inactive</option>
+                            </select>
+                        </div>
+
                     </div>
 
-                    <p class="loading-state" ng-if="loading">Loading student details...</p>
-                    <div class="table-scroll">
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th class="id-column">ID</th>
-                                    <th>STUDENT</th>
-                                    <th>DEPARTMENT</th>
-                                    <th>USN</th>
-                                    <th>CONTACT</th>
-                                    <th>STATUS</th>
-                                    <th class="action-column">ACTIONS</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr ng-repeat="s in students | filter:searchText | orderBy:sortColumn:reverseSort">
-                                    <td class="id-cell">{{s.id}}</td>
-                                    <td class="student-name">{{s.name}}</td>
-                                    <td>{{s.department}}</td>
-                                    <td class="usn-cell">{{s.usn}}</td>
-                                    <td>{{s.contact_details}}</td>
-                                    <td><span class="status-pill" ng-class="{'active': s.active, 'inactive': !s.active}">{{s.active ? 'Active' : 'Inactive'}}</span></td>
-                                    <td class="row-actions">
-                                        <button type="button" class="text-action" ng-click="toggleStatus(s)">Change status</button>
-                                        <button type="button" class="delete-btn" ng-click="deleteStudent(s)" aria-label="Delete {{s.name}}" title="Delete student">Delete</button>
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                    <div class="empty-state" ng-if="!loading && (students | filter:searchText).length === 0">
-                        <span class="empty-mark">+</span>
-                        <strong>No students found</strong>
-                        <span>Try another search or add a student to the directory.</span>
-                    </div>
-                    <div class="table-footer">
-                        <span ng-show="students.length > 0">Showing {{(students | filter:searchText).length}} of {{students.length}} students</span>
-                        <span ng-if="loading" class="loading-caption">Syncing directory...</span>
-                    </div>
-                </section>
+                    <div class="form-buttons">
 
-                <section class="add-section" id="new-student">
-                    <div class="add-intro">
-                        <p class="eyebrow">GROW YOUR COMMUNITY</p>
-                        <h2>Add a student<span class="heading-period">.</span></h2>
-                        <p>Enter the details below to create a new student record.</p>
-                    </div>
-                    <form class="student-form" ng-submit="addStudent()">
-                        <label>Full name<input type="text" ng-model="newStudent.name" placeholder="e.g. Maya Chen" required></label>
-                        <label>Department<input type="text" ng-model="newStudent.department" placeholder="e.g. Computer Science" required></label>
-                        <label>University ID<input type="text" ng-model="newStudent.usn" placeholder="e.g. CS2026001" required></label>
-                        <label>Contact details<input type="text" ng-model="newStudent.contact_details" placeholder="Email or phone" required></label>
-                        <button class="primary-button form-submit" type="submit" ng-disabled="loading">Add to directory <span aria-hidden="true">&rarr;</span></button>
-                    </form>
-                </section>
+                        <button type="submit" ng-disabled="loading">
+                            {{editing ? 'Update Student' : 'Add Student'}}
+                        </button>
 
-                <details class="project-details">
-                    <summary>About this project</summary>
-                    <div class="info">
-                        <p>This project demonstrates AngularJS concepts:</p>
-                        <ul>
-                            <li>Controllers and $scope</li>
-                            <li>ng-model and ng-repeat</li>
-                            <li>ng-click, ng-show, ng-if and ng-class</li>
-                            <li>Filters and orderBy</li>
-                        </ul>
+                        <button type="button"
+                                class="cancel-btn"
+                                ng-if="editing"
+                                ng-click="resetForm()">
+                            Cancel
+                        </button>
+
                     </div>
-                </details>
-                <footer class="page-footer"><span>CAMPUS STUDENT DIRECTORY</span><span>MADE FOR BETTER CAMPUS RECORDS</span></footer>
-            </div>
+
+                </form>
+
+            </section>
+
+
+            <!-- STUDENT DIRECTORY -->
+            <section class="table-card">
+
+                <h2>Student Directory</h2>
+
+                <div class="filters">
+
+                    <input type="text"
+                           ng-model="searchText"
+                           placeholder="Search students...">
+
+                    <select ng-model="sortColumn">
+                        <option value="student_name">Sort by Name</option>
+                        <option value="department">Sort by Department</option>
+                        <option value="usn">Sort by USN</option>
+                    </select>
+
+                    <button class="sort-btn"
+                            ng-click="reverseSort = !reverseSort">
+                        {{reverseSort ? 'Descending' : 'Ascending'}}
+                    </button>
+
+                </div>
+
+                <p class="success">{{successMessage}}</p>
+                <p class="error">{{errorMessage}}</p>
+
+                <div class="table-wrapper">
+
+                    <table>
+
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Name</th>
+                                <th>USN</th>
+                                <th>Department</th>
+                                <th>Year</th>
+                                <th>Contact</th>
+                                <th>Age</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+
+                        <tbody>
+
+                            <tr ng-repeat="s in students |
+                                filter:searchText |
+                                orderBy:sortColumn:reverseSort">
+
+                                <td>{{s.id}}</td>
+                                <td>{{s.student_name}}</td>
+                                <td>{{s.usn}}</td>
+                                <td>{{s.department}}</td>
+                                <td>{{s.year}}</td>
+                                <td>{{s.contact}}</td>
+                                <td>{{s.age || '-'}}</td>
+
+                                <td>
+                                    <span class="status"
+                                          ng-class="(s.status || '').toLowerCase()">
+                                        {{s.status}}
+                                    </span>
+                                </td>
+
+                                <td>
+                                    <button class="edit-btn"
+                                            ng-click="editStudent(s)">
+                                        Edit
+                                    </button>
+
+                                    <button class="delete-btn"
+                                            ng-click="deleteStudent(s)">
+                                        Delete
+                                    </button>
+                                </td>
+
+                            </tr>
+
+                            <tr ng-if="students.length === 0">
+                                <td colspan="9">No students found.</td>
+                            </tr>
+
+                        </tbody>
+
+                    </table>
+
+                </div>
+
+            </section>
+
         </main>
-    </div>
 
-    <!-- JavaScript Connection -->
-    <script src="js/app.js"></script>
+    </section>
 
 </body>
 </html>
